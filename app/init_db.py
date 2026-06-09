@@ -17,7 +17,6 @@ def init_db(db: Session):
 
   if not user:
     user = crud_user.create_user(
-      db=db, 
+      db=db,
       user_in=UserCreate(email="default.user@dev.com", username="default-user", password="password"))
     logging.info(f"Created user {user}")
-  

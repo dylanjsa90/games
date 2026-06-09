@@ -1,3 +1,4 @@
+from .game_score import GameScoreCreate, GameScorePublic, LeaderboardEntry
 from .user import (
     Token,
     TokenPayload,
@@ -7,4 +8,7 @@ from .user import (
     UserUpdate,
 )
 
-__all__ = ["UserCreate", "UserPublic", "UserUpdate", "Token", "TokenPayload", "UserBase"]
+__all__ = [
+    "UserCreate", "UserPublic", "UserUpdate", "Token", "TokenPayload", "UserBase",
+    "GameScoreCreate", "GameScorePublic", "LeaderboardEntry",
+]

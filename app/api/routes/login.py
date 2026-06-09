@@ -1,14 +1,15 @@
 from datetime import timedelta
-from typing import Annotated, Any
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
-from app import crud
-from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
+from app.api import deps
 from app.core import security
 from app.core.config import settings
+from app.crud import user as crud_user  # noqa: F401
 from app.schemas.user import Token, UserPublic, UserUpdate
 from app.utils import (
     generate_password_reset_token,
@@ -23,13 +24,14 @@ router = APIRouter(tags=["login"])
 
 @router.post("/login/access-token")
 def login_access_token(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(deps.get_db),
 ) -> Token:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = crud.user.authenticate(
-        db=session, email=form_data.username, password=form_data.password
+    user = crud_user.authenticate(
+        db=db, email=form_data.username, password=form_data.password
     )
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
@@ -44,7 +46,7 @@ def login_access_token(
 
 
 @router.post("/login/test-token", response_model=UserPublic)
-def test_token(current_user: CurrentUser) -> Any:
+def test_token(current_user = Depends(deps.get_current_user)) -> Any:
     """
     Test access token
     """
@@ -52,11 +54,14 @@ def test_token(current_user: CurrentUser) -> Any:
 
 
 @router.post("/password-recovery/{email}")
-def recover_password(email: str, session: SessionDep) -> Any:
+def recover_password(
+  email: str,
+  db: Session = Depends(deps.get_db)
+) -> Any:
     """
     Password Recovery
     """
-    user = crud.user.get_user_by_email(db=session, email=email)
+    user = crud_user.get_user_by_email(db=db, email=email)
 
     # Always return the same response to prevent email enumeration attacks
     # Only send email if user actually exists
@@ -76,22 +81,22 @@ def recover_password(email: str, session: SessionDep) -> Any:
 
 
 @router.post("/reset-password/")
-def reset_password(session: SessionDep, body: NewPassword) -> Message:
+def reset_password(body: NewPassword, db: Session = Depends(deps.get_db)) -> Message:
     """
     Reset password
     """
     email = verify_password_reset_token(token=body.token)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
-    user = crud.user.get_user_by_email(db=session, email=email)
+    user = crud_user.get_user_by_email(db=db, email=email)
     if not user:
         # Don't reveal that the user doesn't exist - use same error as invalid token
         raise HTTPException(status_code=400, detail="Invalid token")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     user_in_update = UserUpdate(password=body.new_password)
-    crud.user.update_user(
-        db=session,
+    crud_user.update_user(
+        db=db,
         user=user,
         user_in=user_in_update,
     )
@@ -100,14 +105,14 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
 
 @router.post(
     "/password-recovery-html-content/{email}",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(deps.get_current_active_superuser)],
     response_class=HTMLResponse,
 )
-def recover_password_html_content(email: str, session: SessionDep) -> Any:
+def recover_password_html_content(email: str, db: Session = Depends(deps.get_db)) -> Any:
     """
     HTML Content for Password Recovery
     """
-    user = crud.user.get_user_by_email(db=session, email=email)
+    user = crud_user.get_user_by_email(db=db, email=email)
 
     if not user:
         raise HTTPException(

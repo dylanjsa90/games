@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
+    FRONTEND_HOST_ALT: str = "http://localhost:5174"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
     BACKEND_CORS_ORIGINS: Annotated[
@@ -58,7 +59,8 @@ class Settings(BaseSettings):
     @property
     def all_cors_origins(self) -> list[str]:
         return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
-            self.FRONTEND_HOST
+            self.FRONTEND_HOST,
+            self.FRONTEND_HOST_ALT
         ]
 
     PROJECT_NAME: str = os.environ.get("PROJECT_NAME", "games")
@@ -109,6 +111,8 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str = "localroot"
     
     REDIS_URL: str = os.environ.get("REDIS_URL", "redis://localhost:6379")
+
+    MAX_DAILY_PLAYS_PER_GAME: int = 5
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
