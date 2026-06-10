@@ -1,10 +1,11 @@
 import logging
 
 from sqlalchemy import Engine
-from sqlmodel import Session, select
+from sqlalchemy.orm import Session
 from tenacity import after_log, before_log, retry, stop_after_attempt, wait_fixed
 
-from app.core.db import engine  # type: ignore
+from app.database import engine
+from app.models.user import User  # type: ignore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ def init(db_engine: Engine) -> None:
     try:
         with Session(db_engine) as session:
             # Try to create session to check if DB is awake
-            session.exec(select(1))
+            session.query(User)
     except Exception as e:
         logger.error(e)
         raise e
