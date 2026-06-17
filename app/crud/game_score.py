@@ -10,8 +10,9 @@ from app.schemas.game_score import GameScoreCreate, GameScoreUpdate
 
 
 class CRUDGameScore(CRUDBase[GameScore, GameScoreCreate, GameScoreUpdate]):
-
-    def get_daily_play_count(self, db: Session, user_id: int, game: str, today: date) -> int:
+    def get_daily_play_count(
+        self, db: Session, user_id: int, game: str, today: date
+    ) -> int:
         return (
             db.query(GameScore)
             .filter(
@@ -22,7 +23,9 @@ class CRUDGameScore(CRUDBase[GameScore, GameScoreCreate, GameScoreUpdate]):
             .count()
         )
 
-    def create_score(self, db: Session, user_id: int, score_in: GameScoreCreate) -> GameScore:
+    def create_score(
+        self, db: Session, user_id: int, score_in: GameScoreCreate
+    ) -> GameScore:
         entry = GameScore(user_id=user_id, game=score_in.game, score=score_in.score)  # type: ignore
         db.add(entry)
         db.commit()
@@ -38,7 +41,11 @@ class CRUDGameScore(CRUDBase[GameScore, GameScoreCreate, GameScoreUpdate]):
         )
 
     def _leaderboard_query(self, db: Session, game: str, limit: int, time_filter=None):
-        q = db.query(GameScore.user_id, func.max(GameScore.score).label("best_score"), func.min(GameScore.created_at).label("first_achieved"))
+        q = db.query(
+            GameScore.user_id,
+            func.max(GameScore.score).label("best_score"),
+            func.min(GameScore.created_at).label("first_achieved"),
+        )
         q = q.filter(GameScore.game == game)
         if time_filter is not None:
             q = q.filter(time_filter)
@@ -56,13 +63,19 @@ class CRUDGameScore(CRUDBase[GameScore, GameScoreCreate, GameScoreUpdate]):
 
     def get_leaderboard_daily(self, db: Session, game: str, day: date, limit: int = 10):
         return self._leaderboard_query(
-            db, game, limit,
+            db,
+            game,
+            limit,
             time_filter=func.date(GameScore.created_at) == day.isoformat(),
         )
 
-    def get_leaderboard_monthly(self, db: Session, game: str, year: int, month: int, limit: int = 10):
+    def get_leaderboard_monthly(
+        self, db: Session, game: str, year: int, month: int, limit: int = 10
+    ):
         return self._leaderboard_query(
-            db, game, limit,
+            db,
+            game,
+            limit,
             time_filter=(
                 (extract("year", GameScore.created_at) == year)
                 & (extract("month", GameScore.created_at) == month)

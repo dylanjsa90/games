@@ -9,14 +9,19 @@ from app.schemas.user import UserCreate
 
 
 def init_db(db: Session):
-  logging.info("init_db called")
-  Base.metadata.create_all(bind=engine) # type: ignore
-  logging.info("initializing db")
+    logging.info("init_db called")
+    Base.metadata.create_all(bind=engine)  # type: ignore
+    logging.info("initializing db")
 
-  user = crud_user.get_user_by_email(db, "default.user@dev.com")
+    user = crud_user.get_user_by_email(db, "default.user@dev.com")
 
-  if not user:
-    user = crud_user.create_user(
-      db=db,
-      user_in=UserCreate(email="default.user@dev.com", username="default-user", password="password"))
-    logging.info(f"Created user {user}")
+    if not user:
+        user = crud_user.create_user(
+            db=db,
+            user_in=UserCreate(
+                email="default.user@dev.com",
+                username="default-user",
+                password="password",
+            ),
+        )
+        logging.info(f"Created user {user}")

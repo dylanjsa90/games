@@ -3,13 +3,19 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.crud.user import user as crud_user
+from app.models import User
 from app.schemas.user import UserCreate, UserPublic, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=list[UserPublic])
-def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(deps.get_db)):
+def list_users(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(deps.get_db),
+    _: User = Depends(deps.get_current_user),
+):
     return crud_user.get_users(db, skip=skip, limit=limit)
 
 
@@ -24,7 +30,11 @@ def create_user(user_in: UserCreate, db: Session = Depends(deps.get_db)):
 
 
 @router.get("/{user_id}", response_model=UserPublic)
-def get_user(user_id: int, db: Session = Depends(deps.get_db)):
+def get_user(
+    user_id: int,
+    db: Session = Depends(deps.get_db),
+    _: User = Depends(deps.get_current_user),
+):
     user = crud_user.get_user(db, user_id)
     if not user:
         raise HTTPException(
@@ -34,20 +44,37 @@ def get_user(user_id: int, db: Session = Depends(deps.get_db)):
 
 
 @router.put("/{user_id}", response_model=UserPublic)
-def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(deps.get_db)):
+def update_user(
+    user_id: int,
+    user_in: UserUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
     user = crud_user.get_user(db, user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
         )
+    if current_user.id != user_id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions."
+        )
     return crud_user.update_user(db, user, user_in)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: int, db: Session = Depends(deps.get_db)):
+def delete_user(
+    user_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
     user = crud_user.get_user(db, user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        )
+    if current_user.id != user_id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions."
         )
     crud_user.delete_user(db, user)

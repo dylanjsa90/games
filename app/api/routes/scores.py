@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -19,7 +19,9 @@ def submit_score(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ):
-    count = crud_score.get_daily_play_count(db, current_user.id, score_in.game, date.today())
+    count = crud_score.get_daily_play_count(
+        db, current_user.id, score_in.game, datetime.now(timezone.utc).date()
+    )
     if count >= settings.MAX_DAILY_PLAYS_PER_GAME:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -48,7 +50,9 @@ def leaderboard_daily(
     limit: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(deps.get_db),
 ):
-    rows = crud_score.get_leaderboard_daily(db, game, day or date.today(), limit)
+    rows = crud_score.get_leaderboard_daily(
+        db, game, day or datetime.now(timezone.utc).date(), limit
+    )
     return [
         LeaderboardEntry(rank=i, username=u, score=s, achieved_at=a)
         for i, (u, s, a) in enumerate(rows, 1)
@@ -63,9 +67,9 @@ def leaderboard_monthly(
     limit: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(deps.get_db),
 ):
-    today = date.today()
+    today_utc = datetime.now(timezone.utc).date()
     rows = crud_score.get_leaderboard_monthly(
-        db, game, year or today.year, month or today.month, limit
+        db, game, year or today_utc.year, month or today_utc.month, limit
     )
     return [
         LeaderboardEntry(rank=i, username=u, score=s, achieved_at=a)

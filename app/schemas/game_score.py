@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+
 class GameScoreCreate(BaseModel):
     game: str
     score: int
@@ -14,11 +15,14 @@ class GameScorePublic(BaseModel):
     created_at: datetime
     model_config = {"from_attributes": True}
 
+
 class GameScoreInDB(GameScoreCreate):
     user_id: int
 
+
 class GameScoreUpdate(BaseModel):
-  pass
+    pass
+
 
 class LeaderboardEntry(BaseModel):
     rank: int

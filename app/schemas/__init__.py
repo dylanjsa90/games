@@ -9,6 +9,13 @@ from .user import (
 )
 
 __all__ = [
-    "UserCreate", "UserPublic", "UserUpdate", "Token", "TokenPayload", "UserBase",
-    "GameScoreCreate", "GameScorePublic", "LeaderboardEntry",
+    "UserCreate",
+    "UserPublic",
+    "UserUpdate",
+    "Token",
+    "TokenPayload",
+    "UserBase",
+    "GameScoreCreate",
+    "GameScorePublic",
+    "LeaderboardEntry",
 ]

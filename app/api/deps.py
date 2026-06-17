@@ -17,47 +17,46 @@ reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
 )
 
-def get_db() -> Generator:
-  try:
-      db = SessionLocal()
-      yield db
-      db.commit()
-  except:
-      db.rollback()
-      raise
-  finally:
-      db.close()
 
+def get_db() -> Generator:
+    try:
+        db = SessionLocal()
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 def get_current_user(
-  db: Session = Depends(get_db), 
-  token = Depends(reusable_oauth2)
+    db: Session = Depends(get_db), token=Depends(reusable_oauth2)
 ) -> User:
-  try:
-    payload = jwt.decode( # type: ignore
-        token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
-    )
-    token_data = TokenPayload(**payload)
-  except (InvalidTokenError, ValidationError):
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Could not validate credentials",
-    )
-  user = db.get(User, token_data.sub)
-  if not user:
-    raise HTTPException(status_code=404, detail="User not found")
-  if not user.is_active:
-    raise HTTPException(status_code=400, detail="Inactive user")
-  return user
-
+    try:
+        payload = jwt.decode(  # type: ignore
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+    except (InvalidTokenError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.get(User, token_data.sub)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return user
 
 
 def get_current_active_superuser(
-  current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> User:
-  if not current_user.is_superuser:
-    raise HTTPException(
-      status_code=403, detail="The user doesn't have enough privileges"
-    )
-  return current_user
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, detail="The user doesn't have enough privileges"
+        )
+    return current_user

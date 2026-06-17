@@ -7,7 +7,9 @@ DEFAULT_PASSWORD = "password"
 
 
 def test_login_valid_credentials(client):
-    r = client.post(LOGIN_URL, data={"username": DEFAULT_EMAIL, "password": DEFAULT_PASSWORD})
+    r = client.post(
+        LOGIN_URL, data={"username": DEFAULT_EMAIL, "password": DEFAULT_PASSWORD}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "access_token" in body
@@ -16,12 +18,14 @@ def test_login_valid_credentials(client):
 
 def test_login_wrong_password(client):
     r = client.post(LOGIN_URL, data={"username": DEFAULT_EMAIL, "password": "wrong"})
-    assert r.status_code == 400
+    assert r.status_code == 401
 
 
 def test_login_unknown_email(client):
-    r = client.post(LOGIN_URL, data={"username": "nobody@example.com", "password": "pw"})
-    assert r.status_code == 400
+    r = client.post(
+        LOGIN_URL, data={"username": "nobody@example.com", "password": "pw"}
+    )
+    assert r.status_code == 401
 
 
 def test_test_token_valid(client, auth_headers):

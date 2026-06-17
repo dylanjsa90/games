@@ -1,27 +1,22 @@
 import os
-import secrets
 import warnings
-from typing import Annotated, Any, Dict, List, Literal, Optional, Union
-from xml.etree.ElementTree import QName
+from typing import Annotated, Any, Literal
 
 from dotenv import load_dotenv
 from pydantic import (
-    AnyHttpUrl,
     AnyUrl,
     BeforeValidator,
     EmailStr,
     HttpUrl,
-    PostgresDsn,
     computed_field,
     model_validator,
-    validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 _here = os.path.dirname(os.path.abspath(__file__))
-_app_dir = os.path.normpath(os.path.join(_here, ".."))       # backend/app/
-_backend_dir = os.path.normpath(os.path.join(_here, "../..")) # backend/
+_app_dir = os.path.normpath(os.path.join(_here, ".."))  # backend/app/
+_backend_dir = os.path.normpath(os.path.join(_here, "../.."))  # backend/
 
 APP_ENV = os.environ.get("APP_ENV", "local")
 load_dotenv(os.path.join(_backend_dir, "config.env"))
@@ -60,29 +55,12 @@ class Settings(BaseSettings):
     def all_cors_origins(self) -> list[str]:
         return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
             self.FRONTEND_HOST,
-            self.FRONTEND_HOST_ALT
+            self.FRONTEND_HOST_ALT,
         ]
 
     PROJECT_NAME: str = os.environ.get("PROJECT_NAME", "games")
     SENTRY_DSN: HttpUrl | None = None
-    POSTGRES_SERVER: str = "0.0.0.0"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str = os.environ.get("DB_USER", "user")
-    POSTGRES_PASSWORD: str = os.environ.get("DB_PASSWORD", "password")
-    POSTGRES_DB: str = "gamesdb"
-
     DATABASE_URL: str = "sqlite:///./sql_app.db"
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return PostgresDsn.build(
-            scheme="postgresql+psycopg",
-            username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
-            host=self.POSTGRES_SERVER,
-            port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
-        )
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
@@ -109,7 +87,7 @@ class Settings(BaseSettings):
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     FIRST_SUPERUSER: EmailStr = "super.user@root.com"
     FIRST_SUPERUSER_PASSWORD: str = "localroot"
-    
+
     REDIS_URL: str = os.environ.get("REDIS_URL", "redis://localhost:6379")
 
     MAX_DAILY_PLAYS_PER_GAME: int = 5
@@ -128,11 +106,9 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
-
         return self
 
 

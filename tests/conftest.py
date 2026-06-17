@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from app.api.deps import get_db
 from app.core.base_class import Base
 from app.database import engine, SessionLocal
+from app.init_db import init_db
 from app.main import app
 
 
@@ -31,11 +32,24 @@ app.dependency_overrides[get_db] = override_get_db
 def client():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    with TestClient(app) as c:  # startup event seeds default.user@dev.com
+    with TestClient(app) as c:
         yield c
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(autouse=True)
+def reset_db():
+    """Reset database to a clean seeded state before each test."""
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        init_db(db)
+        db.commit()
+    finally:
+        db.close()
+
+
+@pytest.fixture
 def auth_headers(client):
     """Bearer token for the default user seeded by init_db."""
     r = client.post(

@@ -6,27 +6,28 @@ BASE = "/api/v1/scores"
 GAME = "snake"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def submitted_score(client, auth_headers):
     r = client.post(f"{BASE}/", json={"game": GAME, "score": 100}, headers=auth_headers)
     assert r.status_code == 201
     return r.json()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def second_user_and_headers(client):
-    payload = {"email": "player2@example.com", "username": "player2", "password": "secret123"}
+    payload = {
+        "email": "player2@example.com",
+        "username": "player2",
+        "password": "secret123",
+    }
     r = client.post("/api/v1/users/", json=payload)
     assert r.status_code == 201
-    user_id = r.json()["id"]
     r = client.post(
         "/api/v1/login/access-token",
         data={"username": "player2@example.com", "password": "secret123"},
     )
     assert r.status_code == 200
-    headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
-    yield headers
-    client.delete(f"/api/v1/users/{user_id}")
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
 def test_submit_score(client, auth_headers):
@@ -49,9 +50,13 @@ def test_daily_play_limit(client, auth_headers):
     limit_game = "snake_limit_test"
     limit = settings.MAX_DAILY_PLAYS_PER_GAME
     for _ in range(limit):
-        r = client.post(f"{BASE}/", json={"game": limit_game, "score": 1}, headers=auth_headers)
+        r = client.post(
+            f"{BASE}/", json={"game": limit_game, "score": 1}, headers=auth_headers
+        )
         assert r.status_code == 201
-    r = client.post(f"{BASE}/", json={"game": limit_game, "score": 1}, headers=auth_headers)
+    r = client.post(
+        f"{BASE}/", json={"game": limit_game, "score": 1}, headers=auth_headers
+    )
     assert r.status_code == 429
 
 
@@ -73,8 +78,12 @@ def test_leaderboard_alltime_empty(client):
     assert r.json() == []
 
 
-def test_leaderboard_alltime_populated(client, submitted_score, second_user_and_headers):
-    client.post(f"{BASE}/", json={"game": GAME, "score": 999}, headers=second_user_and_headers)
+def test_leaderboard_alltime_populated(
+    client, submitted_score, second_user_and_headers
+):
+    client.post(
+        f"{BASE}/", json={"game": GAME, "score": 999}, headers=second_user_and_headers
+    )
     r = client.get(f"{BASE}/leaderboard/{GAME}/all-time")
     assert r.status_code == 200
     entries = r.json()

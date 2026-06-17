@@ -3,17 +3,14 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.core.config import settings
+from app.core.config import APP_ENV, settings
 
-# 1. Define the SQLite database URL
-SQLALCHEMY_DATABASE_URL ="sqlite:///./sql_app.db"
+_is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 
-# 2. Create the engine.
-# "check_same_thread=False" is REQUIRED strictly for SQLite because FastAPI
-# can interact with the database across multiple threads.
-engine = create_engine(settings.DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    echo=True
+engine = create_engine(
+    settings.DATABASE_URL,
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
+    echo=APP_ENV == "local",
 )
 
 logging.info("Creating SessionLocal")

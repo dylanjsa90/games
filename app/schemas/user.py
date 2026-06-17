@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserBase(BaseModel):
@@ -39,3 +39,12 @@ class Token(BaseModel):
 # Contents of JWT token
 class TokenPayload(BaseModel):
     sub: str | None = None
+
+
+class NewPassword(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class Message(BaseModel):
+    message: str
