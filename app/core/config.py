@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     
     FRONTEND_HOST: str = "http://localhost:5173"
     FRONTEND_HOST_ALT: str = "http://localhost:5174"
-    FRONTEND_HOST_BY_ENV = os.environ.get("FRONTEND_HOST", "http://localhost:4173")
+    FRONTEND_HOST_BY_ENV: str = os.environ.get("FRONTEND_HOST", "http://localhost:4173")
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
     BACKEND_CORS_ORIGINS: Annotated[
